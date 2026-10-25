@@ -43,12 +43,19 @@ def test_bank_account_updates_the_record_saved_for_its_wallet():
     }
 
 
-def test_bank_account_resolves_an_iso_currency_code():
+def test_bank_account_removes_hotglue_metadata_and_resolves_currency():
     sink = make_sink(BankAccountsSink, {"bookmarks": {}})
     sink.currency_ids = {}
     sink.request_api = lambda *args, **kwargs: SimpleNamespace(json=lambda: [{"id": 99}])
 
-    payload = sink.preprocess_record({"externalId": "wallet-usd", "currency": "USD"}, {})
+    payload = sink.preprocess_record(
+        {
+            "externalId": "wallet-usd",
+            "currency": "USD",
+            "metadata": {"source": "airwallex"},
+        },
+        {},
+    )
 
     assert payload == {"currency": 99}
 

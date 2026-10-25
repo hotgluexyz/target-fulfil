@@ -15,6 +15,7 @@ class BankAccountsSink(FulfilRecordSink):
         record = dict(record)
         record.pop("externalId", None)
         record.pop("external_id", None)
+        record.pop("metadata", None)
         record["currency"] = self.resolve_currency(record["currency"])
         return record
 

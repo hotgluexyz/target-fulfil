@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from target_fulfil.client import FulfilRecordSink
 
 
@@ -61,6 +63,8 @@ class BankStatementTransactionsSink(FulfilRecordSink):
                 "Emit bank_accounts before bank_statement_transactions."
             )
         record["bank"] = bank_id
+        record["amount"] = f"{Decimal(str(record['amount'])):.2f}"
+        record["fees"] = f"{Decimal(str(record.get('fees', 0))):.2f}"
         return record
 
     def upsert_record(self, record: dict, context: dict):

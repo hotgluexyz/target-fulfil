@@ -90,13 +90,14 @@ def test_transaction_resolves_its_bank_from_the_wallet_bookmark():
         {
             "externalId": "txn-1",
             "bank_external_id": "wallet-usd",
-            "amount": "12.50",
+            "amount": 12.5,
+            "fees": 0,
             "metadata": {"source": "airwallex"},
         },
         {},
     )
 
-    assert payload == {"amount": "12.50", "bank": "42"}
+    assert payload == {"amount": "12.50", "fees": "0.00", "bank": "42"}
 
 
 def test_transaction_uses_bank_created_before_a_state_checkpoint():
@@ -110,7 +111,7 @@ def test_transaction_uses_bank_created_before_a_state_checkpoint():
         {"bank_external_id": "wallet-usd", "amount": "12.50"}, {}
     )
 
-    assert payload == {"amount": "12.50", "bank": "42"}
+    assert payload == {"amount": "12.50", "fees": "0.00", "bank": "42"}
 
 
 def test_transaction_creates_a_single_record_list():

@@ -15,6 +15,7 @@ class FulfilSink(HotglueBaseSink):
     default_base_url = "https://dev.fulfil.io/api/v2"
     auth_state: ClassVar[dict] = {}
     currency_ids: ClassVar[dict[str, int]] = {}
+    created_bank_ids: ClassVar[dict[str, str]] = {}
 
     @property
     def base_url(self) -> str:

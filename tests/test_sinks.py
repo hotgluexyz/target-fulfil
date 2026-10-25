@@ -57,7 +57,27 @@ def test_bank_account_removes_hotglue_metadata_and_resolves_currency():
         {},
     )
 
-    assert payload == {"currency": 99}
+    assert payload == {"currency": 99, "type": "bank"}
+
+
+def test_bank_account_creates_a_single_record_list():
+    sink = make_sink(BankAccountsSink, {"bookmarks": {}})
+    sent = {}
+    sink.request_api = lambda method, endpoint, request_data: (
+        sent.update(method=method, endpoint=endpoint, payload=request_data)
+        or SimpleNamespace(json=lambda: [{"id": "42"}])
+    )
+
+    record_id, success, updates = sink.upsert_record(
+        {"externalId": "wallet-usd", "wallet_external_id": "wallet-usd"}, {}
+    )
+
+    assert (record_id, success, updates) == ("42", True, {})
+    assert sent == {
+        "method": "POST",
+        "endpoint": "/model/bank",
+        "payload": [{}],
+    }
 
 
 def test_transaction_resolves_its_bank_from_the_wallet_bookmark():
@@ -67,7 +87,45 @@ def test_transaction_resolves_its_bank_from_the_wallet_bookmark():
     sink = make_sink(BankStatementTransactionsSink, state)
 
     payload = sink.preprocess_record(
-        {"externalId": "txn-1", "bank_external_id": "wallet-usd", "amount": "12.50"}, {}
+        {
+            "externalId": "txn-1",
+            "bank_external_id": "wallet-usd",
+            "amount": "12.50",
+            "metadata": {"source": "airwallex"},
+        },
+        {},
     )
 
     assert payload == {"amount": "12.50", "bank": "42"}
+
+
+def test_transaction_uses_bank_created_before_a_state_checkpoint():
+    BankAccountsSink.created_bank_ids.clear()
+    bank_sink = make_sink(BankAccountsSink, {"bookmarks": {}})
+    bank_sink.request_api = lambda *args, **kwargs: SimpleNamespace(json=lambda: [{"id": "42"}])
+    bank_sink.upsert_record({"externalId": "wallet-usd", "wallet_external_id": "wallet-usd"}, {})
+    transaction_sink = make_sink(BankStatementTransactionsSink, {"bookmarks": {}})
+
+    payload = transaction_sink.preprocess_record(
+        {"bank_external_id": "wallet-usd", "amount": "12.50"}, {}
+    )
+
+    assert payload == {"amount": "12.50", "bank": "42"}
+
+
+def test_transaction_creates_a_single_record_list():
+    sink = make_sink(BankStatementTransactionsSink, {"bookmarks": {}})
+    sent = {}
+    sink.request_api = lambda method, endpoint, request_data: (
+        sent.update(method=method, endpoint=endpoint, payload=request_data)
+        or SimpleNamespace(json=lambda: [{"id": "99"}])
+    )
+
+    record_id, success, updates = sink.upsert_record({"externalId": "txn-1"}, {})
+
+    assert (record_id, success, updates) == ("99", True, {})
+    assert sent == {
+        "method": "POST",
+        "endpoint": "/model/bank_statement_transaction",
+        "payload": [{}],
+    }

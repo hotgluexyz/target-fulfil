@@ -16,6 +16,7 @@ class BankAccountsSink(FulfilRecordSink):
         record.pop("externalId", None)
         record.pop("external_id", None)
         record.pop("metadata", None)
+        record.setdefault("type", "bank")
         record["currency"] = self.resolve_currency(record["currency"])
         return record
 
@@ -28,10 +29,15 @@ class BankAccountsSink(FulfilRecordSink):
             response = self.request_api(
                 "PUT", f"{self.endpoint}/{existing_id}", request_data=record
             )
-            return response.json().get("id", existing_id), True, {"is_updated": True}
+            record_id = response.json().get("id", existing_id)
+            updates = {"is_updated": True}
+        else:
+            response = self.request_api("POST", self.endpoint, request_data=[record])
+            record_id = response.json()[0]["id"]
+            updates = {}
 
-        response = self.request_api("POST", self.endpoint, request_data=record)
-        return response.json()["id"], True, {}
+        self.created_bank_ids[external_id] = str(record_id)
+        return record_id, True, updates
 
 
 class BankStatementTransactionsSink(FulfilRecordSink):
@@ -44,8 +50,11 @@ class BankStatementTransactionsSink(FulfilRecordSink):
         record = dict(record)
         record.pop("externalId", None)
         record.pop("external_id", None)
+        record.pop("metadata", None)
         bank_external_id = record.pop("bank_external_id")
-        bank_id = self.state_id_for_external_id("bank_accounts", bank_external_id)
+        bank_id = self.state_id_for_external_id(
+            "bank_accounts", bank_external_id
+        ) or self.created_bank_ids.get(bank_external_id)
         if not bank_id:
             raise ValueError(
                 f"Airwallex wallet '{bank_external_id}' has not been created in Fulfil. "
@@ -57,5 +66,5 @@ class BankStatementTransactionsSink(FulfilRecordSink):
     def upsert_record(self, record: dict, context: dict):
         record.pop("externalId", None)
         record.pop("external_id", None)
-        response = self.request_api("POST", self.endpoint, request_data=record)
-        return response.json()["id"], True, {}
+        response = self.request_api("POST", self.endpoint, request_data=[record])
+        return response.json()[0]["id"], True, {}

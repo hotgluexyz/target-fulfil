@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from target_fulfil.sinks import BankAccountsSink, BankStatementTransactionsSink
 
 
@@ -13,6 +15,34 @@ def make_sink(sink_class, state):
     sink.latest_state = state
     sink._target = SimpleNamespace(_latest_state=state)
     return sink
+
+
+@pytest.mark.parametrize(
+    ("config", "workspace"),
+    [
+        ({}, "https://dev.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io"}, "https://workspace.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io/"}, "https://workspace.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io///"}, "https://workspace.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io/api/v2"}, "https://workspace.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io/api/v2/"}, "https://workspace.fulfil.io"),
+        ({"base_url": "https://workspace.fulfil.io/api/v2///"}, "https://workspace.fulfil.io"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("sink_class", "endpoint", "path"),
+    [
+        (BankAccountsSink, None, "/model/bank"),
+        (BankAccountsSink, "/model/bank/42", "/model/bank/42"),
+        (BankAccountsSink, "/model/currency", "/model/currency"),
+        (BankStatementTransactionsSink, None, "/model/bank_statement_transaction"),
+    ],
+)
+def test_request_urls_include_api_version_once(config, workspace, sink_class, endpoint, path):
+    sink = make_sink(sink_class, {})
+    sink._config = config  # noqa: SLF001 - SDK config property is read-only.
+
+    assert sink.url(endpoint) == f"{workspace}/api/v2{path}"
 
 
 def test_bank_account_updates_the_record_saved_for_its_wallet():

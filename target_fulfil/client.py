@@ -12,14 +12,17 @@ from hotglue_singer_sdk.target_sdk.client import HotglueBaseSink, HotglueSink
 class FulfilSink(HotglueBaseSink):
     """Fulfil Base target sink class for sinks."""
 
-    default_base_url = "https://dev.fulfil.io/api/v2"
+    default_base_url = "https://dev.fulfil.io"
     auth_state: ClassVar[dict] = {}
     currency_ids: ClassVar[dict[str, int]] = {}
     created_bank_ids: ClassVar[dict[str, str]] = {}
 
     @property
     def base_url(self) -> str:
-        return self.config.get("base_url", self.default_base_url).rstrip("/")
+        base_url = self.config.get("base_url", self.default_base_url).rstrip("/")
+        if not base_url.endswith("/api/v2"):
+            base_url += "/api/v2"
+        return base_url
 
     @property
     def authenticator(self) -> Any:

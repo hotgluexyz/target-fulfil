@@ -15,12 +15,15 @@ state, never sent to Fulfil.
 ```json
 {
   "access_key": "fulfil_pat_...",
-  "base_url": "https://dev.fulfil.io/api/v2"
+  "base_url": "https://dev.fulfil.io"
 }
 ```
 
-`base_url` is optional and defaults to the Fulfil dev environment. The token is
-sent in the `X-API-KEY` header.
+`base_url` is the Fulfil workspace root URL, without `/api/v2`. It is optional
+and defaults to `https://dev.fulfil.io`. The target appends `/api/v2`
+automatically. Legacy URLs already ending in `/api/v2` are also accepted, and
+trailing slashes are supported for either form. The token is sent in the
+`X-API-KEY` header.
 
 ## Input contracts
 

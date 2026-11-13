@@ -36,7 +36,12 @@ class TargetFulfil(TargetHotglue):
             "base_url",
             th.StringType,
             required=False,
-            description="Fulfil API root; defaults to the Fulfil dev environment.",
+            default="https://dev.fulfil.io",
+            description=(
+                "Fulfil workspace root URL (e.g. https://dev.fulfil.io). "
+                "The /api/v2 suffix is added automatically; legacy URLs with /api/v2 "
+                "are also accepted. Defaults to the Fulfil dev environment."
+            ),
         ),
     ).to_dict()
 
